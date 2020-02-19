@@ -1,0 +1,7 @@
+# required packages (pip3 install -U -r requirements.txt)
+numpy
+pandas
+scikit-learn
+matplotlib
+keras-gpu
+seaborn
