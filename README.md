@@ -10,9 +10,9 @@ preprint doi:
 link to paper: 
 
 ## Setup
-This code requires TensorFlow and CUDA. Linux users will need to install CUDA and cuDNN separately.
+This code requires TensorFlow 1 and CUDA. Linux users will need to install CUDA and cuDNN separately.
 ### 1. Download or Clone the repository
-https://github.com/rynmurdock/data_is_everything
+https://github.com/rynmurdock/domain_knowledge.git
 
 ### 2. Install via anaconda:
 1. Navigate to directory. Open anaconda prompt.
