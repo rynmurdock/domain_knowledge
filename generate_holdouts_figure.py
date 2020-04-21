@@ -3,6 +3,7 @@
 
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import AutoMinorLocator
 import seaborn as sns
 
 from sklearn.preprocessing import StandardScaler, normalize
@@ -65,7 +66,7 @@ for heldout_element in all_symbols:
     print(test)
     
     
-    # Set r2 scores of elements rarely in the data to -100; we'll grey these
+    # Set r2 scores of elements rarely in the data to -100; we'll exclude these
     if test.shape[0] <= 10:
         for featurizer in elem_props:
             row = [heldout_element, featurizer, -100]
@@ -110,32 +111,50 @@ results_df.to_csv('figures/holdouts/holdout_data.csv')
 # %%
 # Plot holdout results
 
-# results_df = pd.read_csv('figures/holdouts/holdout_data.csv')
+results_df = pd.read_csv('figures/holdouts/holdout_data.csv')
+
+# get all average r2 values and plot them
+r2s = []
+
+# make sure all featurizers only use r2 values that're not -100 in any of them
+not_used = results_df[results_df['r2'].isin([-100])]['symbol'].drop_duplicates()
+results_df = results_df[~results_df['symbol'].isin(not_used)]
 
 
+# I'll probably want to remove outliers or somehow show all elements
 
-# plt.figure(figsize=(6, 6))
 
-# plt.bar([pretty_feats[feat] for feat in elem_props], r2s)
+# collect the average r2
+for feat in elem_props:
+    indies = results_df[results_df['elem_prop'] == feat]
+    print(indies, len(indies))
+    sc = indies['r2'].mean()
+    print(sc)
+    r2s.append(sc)
+    
+    
 
-# for feat, r2 in zip(elem_props, r2s):
+plt.figure(figsize=(6, 6))
 
-#     if pretty_feats[feat] == 'Atom2Vec':
-#         plt.text(pretty_feats[feat], 0.05, f'{r2:0.2f}',
-#                   horizontalalignment='center')
-#     else:
-#         plt.text(pretty_feats[feat], r2+0.03, f'{r2:.2f}',
-#                   horizontalalignment='center')
+plt.bar([pretty_feats[feat] for feat in elem_props], r2s)
 
-# plt.xlabel('Featurizer')
-# plt.xticks(rotation=45)
-# plt.ylabel('r$^2$ ($B$)')
-# plt.tick_params(right=True, top=True, direction='in', length=7)
-# plt.tick_params(which='minor', right=True, top=True, direction='in', length=4)
-# minor_locator = AutoMinorLocator(2)
-# plt.axes().yaxis.set_minor_locator(minor_locator)
-# plt.ylim(0, 1)
-# plt.savefig('figures/holdouts/holdouts.png', dpi=300, transparent=True, bbox_inches='tight')
+for feat, r2 in zip(elem_props, r2s):
+    if pretty_feats[feat] == 'Atom2Vec':
+        plt.text(pretty_feats[feat], 0.05, f'{r2:.2f}',
+                  horizontalalignment='center')
+    else:
+        plt.text(pretty_feats[feat], r2+0.03, f'{r2:.2f}',
+                  horizontalalignment='center')
+
+plt.xlabel('Featurizer')
+plt.xticks(rotation=45)
+plt.ylabel('r$^2$ ($B$)')
+plt.tick_params(right=True, top=True, direction='in', length=7)
+plt.tick_params(which='minor', right=True, top=True, direction='in', length=4)
+minor_locator = AutoMinorLocator(2)
+plt.axes().yaxis.set_minor_locator(minor_locator)
+plt.ylim(0, 1)
+plt.savefig('figures/holdouts/holdouts.png', dpi=300, transparent=True, bbox_inches='tight')
 
 
 
