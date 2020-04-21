@@ -2,9 +2,15 @@
 # visualize their performance on element when an element is left out
 
 import pandas as pd
+import numpy as np
+import os
+
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 from matplotlib.ticker import AutoMinorLocator
+from matplotlib.colors import Normalize
 import seaborn as sns
+import matplotlib.cm as cm
 
 from sklearn.preprocessing import StandardScaler, normalize
 from sklearn.linear_model import Ridge
@@ -111,53 +117,115 @@ results_df.to_csv('figures/holdouts/holdout_data.csv')
 # %%
 # Plot holdout results
 
+def r2_heatmap(df, elem_prop, save_dir='figures/holdouts/'):
+    name = elem_prop
+    ptable = pd.read_csv('data/element_properties/ptable.csv')
+    ptable.index = ptable['symbol'].values
+    n_row = ptable['row'].max()
+    n_column = ptable['column'].max()
+        
+    this_feat = df[df['elem_prop'] == elem_prop]
+    
+    
+    for idx, _, element, elem_prop, r2 in this_feat.itertuples():
+        ptable.loc[ptable['symbol'] == element, 'count'] += r2
+
+    elem_tracker = ptable['count']
+    print(elem_tracker)
+
+    fig, ax = plt.subplots(figsize=(n_column, n_row))
+    rows = ptable['row']
+    columns = ptable['column']
+    symbols = ptable['symbol']
+    rw = 0.9  # rectangle width (rw)
+    rh = rw  # rectangle height (rh)
+    for row, column, symbol in zip(rows, columns, symbols):
+        row = ptable['row'].max() - row
+        cmap = cm.YlGn
+        count_min = -1
+        count_max = 1
+        norm = Normalize(vmin=count_min, vmax=count_max)
+        count = elem_tracker[symbol]
+        color = cmap(norm(count))
+        if count == -100:
+            color = 'silver'
+        if row < 3:
+            row += 0.5
+        rect = patches.Rectangle((column, row), rw, rh,
+                                 linewidth=1.5,
+                                 edgecolor='gray',
+                                 facecolor=color,
+                                 alpha=1)
+
+        plt.text(column+rw/2, row+rw/2, symbol,
+                 horizontalalignment='center',
+                 verticalalignment='center',
+                 fontsize=20,
+                 fontweight='semibold', color='k')
+
+        ax.add_patch(rect)
+
+    granularity = 20
+    for i in range(-granularity, granularity + 1, 2):
+        value = (i) * count_max/(granularity)
+        color = cmap(norm(value))
+        length = 4
+        x_offset = 3.9
+        y_offset = 7.8
+        x_loc = i/(granularity * 2) * length + x_offset
+        width = length / granularity * 2
+        height = 0.35
+        rect = patches.Rectangle((x_loc * 2, y_offset), width, height,
+                                 linewidth=1.5,
+                                 edgecolor='gray',
+                                 facecolor=color,
+                                 alpha=1)
+
+        if value in [-1, -.5, 0, .5, 1]:
+            text = str(round(value,2))
+            if value == -1:
+                text = '<' + str(round(value,2))
+            plt.text(x_loc * 2 + width - x_loc / granularity, y_offset-0.4, text,
+                     horizontalalignment='center',
+                     verticalalignment='center',
+                     fontweight='semibold',
+                     fontsize=20, color='k')
+
+        ax.add_patch(rect)
+
+    plt.text(x_offset+length, y_offset+0.7,
+             'Element Count',
+             horizontalalignment='center',
+             verticalalignment='center',
+             fontweight='semibold',
+             fontsize=20, color='k')
+
+    ax.set_ylim(-0.15, n_row+.1)
+    ax.set_xlim(0.85, n_column+1.1)
+
+    # fig.patch.set_visible(False)
+    ax.axis('off')
+
+    if save_dir is not None:
+        fig_name = f'{save_dir}/{name}_ptable.png'
+        os.makedirs(save_dir, exist_ok=True)
+        plt.savefig(fig_name, bbox_inches='tight', dpi=300)
+    plt.draw()
+    plt.pause(0.001)
+    plt.close()
+
+    
+
+
+
+
+
+
 results_df = pd.read_csv('figures/holdouts/holdout_data.csv')
 
-# get all average r2 values and plot them
-r2s = []
+# you could drop the -100s
+# not_used = results_df[results_df['r2'].isin([-100])]['symbol'].drop_duplicates()
+# results_df = results_df[~results_df['symbol'].isin(not_used)]
 
-# make sure all featurizers only use r2 values that're not -100 in any of them
-not_used = results_df[results_df['r2'].isin([-100])]['symbol'].drop_duplicates()
-results_df = results_df[~results_df['symbol'].isin(not_used)]
-
-
-# I'll probably want to remove outliers or somehow show all elements
-
-
-# collect the average r2
-for feat in elem_props:
-    indies = results_df[results_df['elem_prop'] == feat]
-    print(indies, len(indies))
-    sc = indies['r2'].mean()
-    print(sc)
-    r2s.append(sc)
-    
-    
-
-plt.figure(figsize=(6, 6))
-
-plt.bar([pretty_feats[feat] for feat in elem_props], r2s)
-
-for feat, r2 in zip(elem_props, r2s):
-    if pretty_feats[feat] == 'Atom2Vec':
-        plt.text(pretty_feats[feat], 0.05, f'{r2:.2f}',
-                  horizontalalignment='center')
-    else:
-        plt.text(pretty_feats[feat], r2+0.03, f'{r2:.2f}',
-                  horizontalalignment='center')
-
-plt.xlabel('Featurizer')
-plt.xticks(rotation=45)
-plt.ylabel('r$^2$ ($B$)')
-plt.tick_params(right=True, top=True, direction='in', length=7)
-plt.tick_params(which='minor', right=True, top=True, direction='in', length=4)
-minor_locator = AutoMinorLocator(2)
-plt.axes().yaxis.set_minor_locator(minor_locator)
-plt.ylim(0, 1)
-plt.savefig('figures/holdouts/holdouts.png', dpi=300, transparent=True, bbox_inches='tight')
-
-
-
-
-
-
+for elem_prop in elem_props:
+    r2_heatmap(results_df, elem_prop)
