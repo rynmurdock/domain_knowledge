@@ -7,13 +7,13 @@ import os
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from matplotlib.ticker import AutoMinorLocator
 from matplotlib.colors import Normalize
 import seaborn as sns
 import matplotlib.cm as cm
 
 from sklearn.preprocessing import StandardScaler, normalize
 from sklearn.linear_model import Ridge
+from sklearn.metrics import mean_absolute_error
 
 from utils.composition import generate_features
 
@@ -61,7 +61,7 @@ all_symbols = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
                'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
 
-results_df = pd.DataFrame(columns=['symbol', 'elem_prop', 'r2'])
+results_df = pd.DataFrame(columns=['symbol', 'elem_prop', 'r2', 'mae'])
 
 for heldout_element in all_symbols:
     # Generate holdout element dataframe
@@ -72,10 +72,10 @@ for heldout_element in all_symbols:
     print(test)
     
     
-    # Set r2 scores of elements rarely in the data to -100; we'll exclude these
+    # Set r2 scores of elements rarely in the data to -10000; we'll exclude these
     if test.shape[0] <= 10:
         for featurizer in elem_props:
-            row = [heldout_element, featurizer, -100]
+            row = [heldout_element, featurizer, -10000, -10000]
             results_df.loc[len(results_df)] = row
         continue
     
@@ -92,7 +92,7 @@ for heldout_element in all_symbols:
         y_test = y_test.values
         
         if X_test.shape[0] <= 10: # some rare elements are not featurizable
-            row = [heldout_element, featurizer, -100]
+            row = [heldout_element, featurizer, -10000, -10000]
             results_df.loc[len(results_df)] = row
             continue
     
@@ -106,8 +106,10 @@ for heldout_element in all_symbols:
         # Train and score model
         reg = Ridge(random_state=100)
         reg.fit(X_train, y_train)
-        metric = reg.score(X_test, y_test)
-        row = [heldout_element, featurizer, metric]
+        rr = reg.score(X_test, y_test)
+        y_pred = reg.predict(X_test)
+        mae = mean_absolute_error(y_test, y_pred)
+        row = [heldout_element, featurizer, rr, mae]
         results_df.loc[len(results_df)] = row
         
 results_df.to_csv('figures/holdouts/holdout_data.csv')
@@ -117,8 +119,8 @@ results_df.to_csv('figures/holdouts/holdout_data.csv')
 # %%
 # Plot holdout results
 
-def r2_heatmap(df, elem_prop, save_dir='figures/holdouts/'):
-    name = elem_prop
+def met_heatmap(df, elem_prop, metric='mae', save_dir='figures/holdouts/'):
+    name = elem_prop + ' ' + metric
     ptable = pd.read_csv('data/element_properties/ptable.csv')
     ptable.index = ptable['symbol'].values
     n_row = ptable['row'].max()
@@ -127,11 +129,13 @@ def r2_heatmap(df, elem_prop, save_dir='figures/holdouts/'):
     this_feat = df[df['elem_prop'] == elem_prop]
     
     
-    for idx, _, element, elem_prop, r2 in this_feat.itertuples():
-        ptable.loc[ptable['symbol'] == element, 'count'] += r2
+    for idx, _, element, elem_prop, r2, mae in this_feat.itertuples():
+        if metric == 'mae':
+            ptable.loc[ptable['symbol'] == element, 'count'] += mae
+        else:
+            ptable.loc[ptable['symbol'] == element, 'count'] += r2
 
     elem_tracker = ptable['count']
-    print(elem_tracker)
 
     fig, ax = plt.subplots(figsize=(n_column, n_row))
     rows = ptable['row']
@@ -141,13 +145,21 @@ def r2_heatmap(df, elem_prop, save_dir='figures/holdouts/'):
     rh = rw  # rectangle height (rh)
     for row, column, symbol in zip(rows, columns, symbols):
         row = ptable['row'].max() - row
-        cmap = cm.YlGn
-        count_min = -1
-        count_max = 1
+        if metric == 'mae':
+            cmap = cm.YlGn_r
+        else:
+            cmap = cm.YlGn
+        # relative to the featurizer; could be made absolute
+        if metric == 'mae':
+            count_min = elem_tracker[elem_tracker>-1000].min()
+            count_max = elem_tracker.max()
+        else:
+            count_min = -1
+            count_max = 1
         norm = Normalize(vmin=count_min, vmax=count_max)
         count = elem_tracker[symbol]
         color = cmap(norm(count))
-        if count == -100:
+        if count == -10000:
             color = 'silver'
         if row < 3:
             row += 0.5
@@ -167,7 +179,10 @@ def r2_heatmap(df, elem_prop, save_dir='figures/holdouts/'):
 
     granularity = 20
     for i in range(-granularity, granularity + 1, 2):
-        value = (i) * count_max/(granularity)
+        if metric == 'r2':
+            value = (i) * count_max/(granularity)
+        else:
+            value = (i + granularity) * count_max/(granularity * 2)
         color = cmap(norm(value))
         length = 4
         x_offset = 3.9
@@ -181,9 +196,12 @@ def r2_heatmap(df, elem_prop, save_dir='figures/holdouts/'):
                                  facecolor=color,
                                  alpha=1)
 
-        if value in [-1, -.5, 0, .5, 1]:
-            text = str(round(value,2))
-            if value == -1:
+        if i in range(-granularity, granularity + 1, 8):
+            if metric == 'r2':
+                text = str(round(value,2))
+            else:
+                text = str(round(value, 0))
+            if value == -1 and metric == 'r2':
                 text = '<' + str(round(value,2))
             plt.text(x_loc * 2 + width - x_loc / granularity, y_offset-0.4, text,
                      horizontalalignment='center',
@@ -192,13 +210,20 @@ def r2_heatmap(df, elem_prop, save_dir='figures/holdouts/'):
                      fontsize=20, color='k')
 
         ax.add_patch(rect)
-
-    plt.text(x_offset+length, y_offset+0.7,
-             'Element Count',
-             horizontalalignment='center',
-             verticalalignment='center',
-             fontweight='semibold',
-             fontsize=20, color='k')
+    if metric == 'mae':
+        plt.text(x_offset+length, y_offset+0.7,
+                 'Mean Absolute Error',
+                 horizontalalignment='center',
+                 verticalalignment='center',
+                 fontweight='semibold',
+                 fontsize=20, color='k')
+    else:
+        plt.text(x_offset+length, y_offset+0.7,
+                 'r2 Score',
+                 horizontalalignment='center',
+                 verticalalignment='center',
+                 fontweight='semibold',
+                 fontsize=20, color='k')
 
     ax.set_ylim(-0.15, n_row+.1)
     ax.set_xlim(0.85, n_column+1.1)
@@ -214,8 +239,6 @@ def r2_heatmap(df, elem_prop, save_dir='figures/holdouts/'):
     plt.pause(0.001)
     plt.close()
 
-    
-
 
 
 
@@ -223,9 +246,10 @@ def r2_heatmap(df, elem_prop, save_dir='figures/holdouts/'):
 
 results_df = pd.read_csv('figures/holdouts/holdout_data.csv')
 
-# you could drop the -100s
-# not_used = results_df[results_df['r2'].isin([-100])]['symbol'].drop_duplicates()
+# you could drop the --10000s
+# not_used = results_df[results_df['r2'].isin([-10000])]['symbol'].drop_duplicates()
 # results_df = results_df[~results_df['symbol'].isin(not_used)]
 
 for elem_prop in elem_props:
-    r2_heatmap(results_df, elem_prop)
+    met_heatmap(results_df, elem_prop)
+    met_heatmap(results_df, elem_prop, metric='r2')
