@@ -1,5 +1,4 @@
 import pandas as pd
-import os
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -50,10 +49,9 @@ to_symbols = {'energy_atom': '$\\Delta H$',
 markers = {prop: marker for prop, marker in zip(elem_props, markers)}
 
 
-def learning_cur(std=False, elem_props=elem_props):
+def avg_and_r2_learning_curs(std=False, elem_props=elem_props):
     pal = sns.color_palette("Set1", n_colors=7, desat=.5)
     sns.set_palette(pal)
-    std = False
     avg_improvement = {elem_prop: np.zeros(6) for elem_prop in elem_props}
     for sub, material_prop in enumerate(material_props):
         r2 = [0, 9, 12]
@@ -140,7 +138,7 @@ def learning_cur(std=False, elem_props=elem_props):
     plt.xticks(x_all)
     plt.xscale('log')
     plt.legend(ncol=2, handletextpad=0.5, handlelength=1.5, columnspacing=0.3)
-    plt.savefig('figures/learning_curves/' + material_prop +
+    plt.savefig('figures/learning_curves/' + 
                 '_' + str(units)[1:-1] + '_comparison_r2.png',
                 dpi=300, transparent=True, bbox_inches='tight')
 
@@ -150,15 +148,6 @@ def to_p(x):
 
 
 def just_one():
-    pal = sns.cubehelix_palette(7, start=0.10, rot=0.3, gamma=1.5,
-                                hue=1, reverse=True)
-
-    pal = sns.cubehelix_palette(7, start=.3, rot=-.75)
-
-    sns.set_palette(pal)
-
-    # markers = ['o', 'v', 'h', 'd', 'X', '8', 'P']
-    markers = ['1', '2', '3', '4', '+', 'x', '|']
     one_desc = 'onehot'
     mse = [0, 8, 11]
     style = mse
@@ -166,8 +155,6 @@ def just_one():
     for mr, material_prop in enumerate(material_props):
         location = 'figures/data/' + one_desc + ' -- ' + material_prop + \
             ' -- '+str(units)[1:-1] + '.csv'
-        mat = f'data/material_properties/{material_prop}/train.csv'
-        df_prop = pd.read_csv(mat)
         df = pd.read_csv(location)
         x = df.iloc[:, style[0]]
         y = np.sqrt(df.iloc[:, style[1]])
@@ -180,7 +167,6 @@ def just_one():
             plt.plot(x, y, '' + '-', color='grey',
                  linewidth=4, markersize=10, alpha=1, mfc='w', mew=1.5)
 
-    markers = ['$f$', 'x', '-', '2', '+', 'x', '|']
     # one_desc = 'oliynyk'
     one_desc = 'jarvis'
     mse = [0, 8, 11]
@@ -190,8 +176,7 @@ def just_one():
             x_max = x
         location = 'figures/data/' + one_desc + ' -- ' + material_prop + \
             ' -- '+str(units)[1:-1] + '.csv'
-        mat = f'data/material_properties/{material_prop}/train.csv'
-        df_prop = pd.read_csv(mat)
+
         df = pd.read_csv(location)
         x = df.iloc[:, style[0]]
         y = np.sqrt(df.iloc[:, style[1]])
@@ -296,19 +281,55 @@ def multi_figure(mat_props, std=False):
                     '_many_curves.png',
                     dpi=300, transparent=True, bbox_inches='tight')
 
+def basic_lr_curve(metric, mat_p):
+    pal = sns.color_palette("Set1", n_colors=7, desat=.5)
+    sns.set_palette(pal)
+    if metric == 'MAE':
+        style = [0, 7, 10]
+    if metric == 'MSE':
+        style = [0, 8, 11]
+    if metric == 'r2':
+        style = [0, 9, 12]
+    plt.figure(figsize=(6, 6))
+    for mr, elem_p in enumerate(elem_props):
+        location = 'figures/data/' + elem_p + ' -- ' + mat_p + \
+            ' -- '+str(units)[1:-1] + '.csv'
+
+        df = pd.read_csv(location)
+        x = df.iloc[:, style[0]]
+        y = df.iloc[:, style[1]]
+        if elem_p == 'onehot':
+            plt.plot(x, y, '-', linewidth=6, color='grey',
+            label=pretty_descs[elem_p], alpha=0.9, markersize=8)
+        else:
+            plt.plot(x, y, '-', marker=markers[elem_p], 
+                     label=pretty_descs[elem_p], linewidth=4, markersize=10, 
+                     alpha=1, mfc='w', mew=1.5,)
+
+    
+    plt.tick_params(right=True, top=True, direction='in', length=7)
+    plt.tick_params(which='minor', right=True, top=True, direction='in',
+                    length=4)
+    minor_locator = AutoMinorLocator(2)
+    plt.axes().yaxis.set_minor_locator(minor_locator)
+
+    plt.legend()
+    plt.xlabel('Number of Training Datapoints')
+    plt.ylabel(f'{metric} ({to_symbols[mat_p]})')
+    plt.savefig('figures/learning_curves/' + mat_p + '_learning_curve_' 
+                + metric + str(units)[1:-1] + '.png',
+                dpi=300, transparent=True, bbox_inches='tight')
 
 for units in nets:
-    learning_cur()
+    for mat in material_props:
+        basic_lr_curve(metric='MAE', mat_p=mat)
+        plt.show()
+    
+    avg_and_r2_learning_curs()
     plt.show()
 
     just_one()
     plt.show()
-
-
-    # learning_cur(elem_props=['oliynyk',
-    #                           'jarvis',
-    #                           'onehot'], std=True)
-    # plt.show()
-
-    # multi_figure(['ael_shear_modulus_vrh'])
-    # plt.show()
+    
+    
+    

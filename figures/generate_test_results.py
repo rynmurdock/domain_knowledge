@@ -70,39 +70,34 @@ for units in nets:
                  'agl_log10_thermal_expansion_300K': 'Thermal Expansion'}
 
     def by_descriptor(title=''):
-        plt.rcParams.update({'font.size': 16})
-        plt.figure(figsize=(8, 8))
-        for sub, material_prop in enumerate(material_props):
+        for material_prop in material_props:
+            plt.rcParams.update({'font.size': 12})
+            plt.figure(figsize=(8, 8))
             y = []
             x = []
-            for elem_prop in elem_props:
+            for sub, elem_prop in enumerate(elem_props):
                 location = 'figures/test_results/' + elem_prop + \
                     ' -- ' + material_prop + ' -- ' + str(units) + '.csv'
                 df = pd.read_csv(location)
                 x.append(pretty_descs[elem_prop])
-                y.append(float(df.iloc[0, 3][1:-1]))
-                #  grab the 0th row and 3rd column;
-                #  slice that string for only the value
-            plt.plot(x, y, markers[sub] + '--', linewidth=2,
-                     markersize=10, label=to_symbols[material_prop], alpha=1)
-            if sub == 4:
-                plt.plot(x, y, markers[sub] + '--', linewidth=2,
-                         label=None, alpha=1, markersize=10, color='gold')
-        plt.tick_params(right=True, top=True, direction='in')
-        plt.yticks(np.arange(.1, 1.1, 0.1))
-        plt.xlabel('Descriptor')
-        plt.ylabel('r$^2$')
-        minor_locator = AutoMinorLocator(2)
-        plt.axes().yaxis.set_minor_locator(minor_locator)
-        plt.ylim(0, 1)
-        plt.legend()
-        plt.savefig('figures/test_results/' + units
-                    + title + '_test_results_r2_by_descriptor.png',
-                    dpi=300, transparent=True, bbox_inches='tight')
+                # grab the scores
+                y.append(float(df.iloc[0, 1][1:-1]))
+                
+                # slice that string for only the value
+            plt.bar(x, y, label=to_symbols[material_prop], alpha=1)
+            plt.tick_params(right=True, top=True, direction='in')
+            plt.xlabel('Descriptor')
+            plt.ylabel('MAE')
+            plt.legend()
+            plt.savefig('figures/test_results/' + units
+                        + title + '_' + material_prop + 
+                        '_test_results_mae_by_descriptor.png',
+                        dpi=300, transparent=True)
+            plt.close()
 
     def by_material_prop(title=''):
         plt.rcParams.update({'font.size': 16})
-        plt.figure(figsize=(8, 8))
+        plt.figure(figsize=(10, 10))
 
         for mr, elem_prop in enumerate(elem_props):
             y = []
@@ -112,25 +107,28 @@ for units in nets:
                     material_prop + ' -- ' + str(units) + '.csv'
                 df = pd.read_csv(location)
                 x.append(to_symbols[material_prop])
-                y.append(float(df.iloc[0, 3][1:-1]))
+                
+                y.append(float(df.iloc[0, 1][1:-1]))
+                
             plt.plot(x, y, markers[mr] + '--', linewidth=2, markersize=10,
                      label=pretty_descs[elem_prop], alpha=1)
         plt.tick_params(right=True, top=True, direction='in')
-        plt.yticks(np.arange(.1, 1.1, 0.1))
+        # plt.yticks(np.arange(.1, 1.1, 0.1))
 
-        plt.ylabel('r$^2$')
+        plt.ylabel('MAE')
         minor_locator = AutoMinorLocator(2)
         plt.axes().yaxis.set_minor_locator(minor_locator)
-        plt.ylim(0, 1)
+        # plt.ylim(0, 1)
         plt.legend()
         # plt.title('Test results with ' + units + ' Hidden Units')
         plt.savefig('figures/test_results/' + units + title +
-                    '_test_results_r2.png',
+                    '_test_results_mae.png',
                     dpi=300, transparent=True, bbox_inches='tight')
+        plt.close()
 
 
 
-    by_descriptor('_all')
+    by_descriptor()
     by_material_prop('_all')
 
     def best_of_all(models, elem_props, material_props):
