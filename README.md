@@ -47,3 +47,4 @@ https://github.com/rynmurdock/domain_knowledge.git
 ### Generate r2 scores of unseen element predictions with various descriptors using a ridge regression
 ###
  `python generate_holdouts_figure.py`
+ `python generate_holdouts_heatmaps.py`
