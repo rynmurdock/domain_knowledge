@@ -4,23 +4,22 @@ import matplotlib.pyplot as plt
 
 plt.style.use('seaborn-colorblind')
 
-markers = ['o', 'v', 'h', 'd', 'X', 'S', 'P']
+markers = ['o', 'v', 'h', 'd', 'X', '^', 'P']
 
-nets = [[512, 512]]
+nets = [[32, 32], [512, 512]]
 
-# elem_props = ['onehot',
-#               'random_200',
-#               'magpie',
-#               'atom2vec',
-#               'mat2vec',
-#               'jarvis_shuffled',
-#               'jarvis']
-# Only the four viable descriptors are used
-elem_props = ['magpie', 'onehot',
-              'mat2vec', 'jarvis']
+elem_props = ['onehot',
+              'random_200',
+              'magpie',
+              'atom2vec',
+              'mat2vec',
+              'jarvis',
+              'oliynyk']
 
 
-pretty_descs = {'onehot': 'onehot',
+
+pretty_descs = {'oliynyk': 'Oliynyk',
+                'onehot': 'onehot',
                 'random_200': 'random',
                 'magpie': 'Magpie',
                 'atom2vec': 'Atom2Vec',
@@ -30,11 +29,8 @@ pretty_descs = {'onehot': 'onehot',
 
 material_props = ['ael_shear_modulus_vrh', 'Egap',
                   'agl_log10_thermal_expansion_300K',
-                  'ael_bulk_modulus_vrh']
-# material_props = ['ael_shear_modulus_vrh', 'Egap',
-#                   'agl_log10_thermal_expansion_300K',
-#                   'ael_bulk_modulus_vrh', 'ael_debye_temperature',
-#                   'energy_atom', 'agl_thermal_conductivity_300K']
+                  'ael_bulk_modulus_vrh', 'ael_debye_temperature',
+                  'energy_atom', 'agl_thermal_conductivity_300K']
 
 to_symbols = {'energy_atom': '$\\Delta H$',
               'ael_shear_modulus_vrh': '$G$',
@@ -66,20 +62,27 @@ def plot_train(df, title):
 def table_inference(df, title):
     plt.rcParams.update({'font.size': 12})
     plt.figure(figsize=(27, 3))
-    # we're just using the first material property; shouldn't vary anyways
-    predictions = pd.read_csv('data/material_properties/' +
-                              material_props[0] + '/test.csv')
-    predictions_tested = predictions.values.shape[0]
     y = []
     for elem_prop in elem_props:
-        y.append(np.round(predictions_tested / df[elem_prop + ' -- ' +
-                                                  material_props[0]][0], 2))
+        avg = []
+        for mat_prop in material_props:
+            '''
+            We take the average across material properties because
+            GPU heat/efficiency could vary slightly based on time.
+            '''
+            predictions = pd.read_csv('data/material_properties/' +
+                                  mat_prop + '/test.csv')
+            predictions_tested = predictions.values.shape[0]
+            avg.append(predictions_tested / df[elem_prop + ' -- ' +
+                                                      mat_prop][0])
+        y.append(np.round(sum(avg)/len(avg), 2))
+        
     colbls = [pretty_descs[elem_prop] for elem_prop in elem_props]
     the_table = plt.table([y], colLabels=colbls,
                           rowLabels=['Predictions/Second'], loc='center')
     the_table.auto_set_font_size(False)
-    the_table.set_fontsize(24)
-    the_table.scale(.3, 3)
+    the_table.set_fontsize(12)
+    the_table.scale(.3, 5)
 
     # Removing ticks and spines enables you to get the figure only with table
     plt.tick_params(axis='x', which='both',
@@ -102,3 +105,4 @@ for units in nets:
                              units + '.csv')
     plot_train(train_times, 'training')
     table_inference(test_times, 'testing', )
+

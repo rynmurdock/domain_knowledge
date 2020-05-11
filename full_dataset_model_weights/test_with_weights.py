@@ -7,9 +7,6 @@ import train_nn
 archs = [[512, 512], [32, 32]]
 
 
-secs_to_train = []
-combos = []
-
 mat_props = ['ael_shear_modulus_vrh',
              'energy_atom',
              'agl_log10_thermal_expansion_300K',
@@ -21,6 +18,8 @@ mat_props = ['ael_shear_modulus_vrh',
 features = ['onehot.csv', 'random_200.csv', 'magpie.csv', 'atom2vec.csv',
             'mat2vec.csv', 'jarvis_shuffled.csv', 'jarvis.csv', 'oliynyk.csv']
 for units in archs:
+    secs_to_train = []
+    combos = []
 	for material_property in mat_props:
 	    test_df = pd.read_csv('data/material_properties/' +
 	                          material_property+'/test.csv')
