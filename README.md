@@ -40,11 +40,11 @@ https://github.com/rynmurdock/domain_knowledge.git
 
 `python full_dataset_model_weights/test_with_weights.py`
 
-### Generate r2 scores for different train/test splits using a ridge regression
+### Generate metrics for different train/test splits using a ridge regression
 ###
  `python generate_test_splits_figure.py`
 
-### Generate r2 scores of unseen element predictions with various descriptors using a ridge regression
+### Generate metrics of unseen element predictions with various descriptors using a ridge regression
 ###
  `python generate_holdouts_figure.py`
  
