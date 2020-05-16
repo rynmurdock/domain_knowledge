@@ -23,8 +23,8 @@ elem_props = ['onehot',
               'jarvis',
               'atom2vec']
 
-pretty_descs = {'onehot': 'onehot',
-                'random_200': 'random',
+pretty_descs = {'onehot': 'Fractional',
+                'random_200': 'Random',
                 'magpie': 'Magpie',
                 'atom2vec': 'Atom2Vec',
                 'mat2vec': 'mat2vec',
@@ -131,7 +131,7 @@ def avg_and_r2_learning_curs(std=False, elem_props=elem_props):
     plt.tick_params(which='minor', right=True, top=True, direction='in',
                     length=4)
     plt.xlabel('Number of Training Data')
-    plt.ylabel(f'Average improvement over onehot')
+    plt.ylabel(f'Average improvement over Fractional')
     plt.yticks(np.arange(-.2, .3, 0.1))
     minor_locator = AutoMinorLocator(2)
     plt.axes().yaxis.set_minor_locator(minor_locator)

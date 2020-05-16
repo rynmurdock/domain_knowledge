@@ -29,8 +29,8 @@ for units in nets:
     # Only the four viable descriptors are used
     # elem_props = ['onehot', 'magpie',
     #               'mat2vec', 'jarvis']
-    pretty_descs = {'onehot': 'onehot',
-                    'random_200': 'random',
+    pretty_descs = {'onehot': 'Fractional',
+                    'random_200': 'Random',
                     'magpie': 'Magpie',
                     'atom2vec': 'Atom2Vec',
                     'mat2vec': 'mat2vec',

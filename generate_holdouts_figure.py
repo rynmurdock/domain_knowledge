@@ -38,8 +38,8 @@ elem_props = ['onehot',
               'jarvis',
               'oliynyk']
       
-pretty_feats = {'onehot': 'onehot',
-                'random_200': 'random',
+pretty_feats = {'onehot': 'Fractional',
+                'random_200': 'Random',
                 'magpie': 'Magpie',
                 'jarvis': 'Jarvis',
                 'atom2vec': 'Atom2Vec',

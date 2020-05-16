@@ -19,8 +19,8 @@ elem_props = ['onehot',
 
 
 pretty_descs = {'oliynyk': 'Oliynyk',
-                'onehot': 'onehot',
-                'random_200': 'random',
+                'onehot': 'Fractional',
+                'random_200': 'Random',
                 'magpie': 'Magpie',
                 'atom2vec': 'Atom2Vec',
                 'mat2vec': 'mat2vec',
