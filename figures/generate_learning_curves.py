@@ -322,7 +322,7 @@ def basic_lr_curve(metric, mat_p):
 
 for units in nets:
     for mat in material_props:
-        basic_lr_curve(metric='MAE', mat_p=mat)
+        basic_lr_curve(metric='MSE', mat_p=mat)
         plt.show()
     
     avg_and_r2_learning_curs()

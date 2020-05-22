@@ -20,7 +20,7 @@ features = ['onehot.csv', 'random_200.csv', 'magpie.csv', 'atom2vec.csv',
 for units in archs:
     secs_to_train = []
     combos = []
-	for material_property in mat_props:
+    for material_property in mat_props:
 	    test_df = pd.read_csv('data/material_properties/' +
 	                          material_property+'/test.csv')
 	    df_t = pd.read_csv('data/material_properties/' +
@@ -63,5 +63,5 @@ for units in archs:
 	        print('Duration', duration)
 	        secs_to_train.append(duration)
 
-	time_df = pd.DataFrame([secs_to_train], columns=combos)
-	time_df.to_csv('figures/time/time_for_testing'+str(units)[1:-1]+'.csv')
+    time_df = pd.DataFrame([secs_to_train], columns=combos)
+    time_df.to_csv('figures/time/time_for_testing'+str(units)[1:-1]+'.csv')
